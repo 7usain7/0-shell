@@ -40,6 +40,7 @@ fn main() {
                     "rm" => builtins::rm(args),
                     "cp" => builtins::cp(args),
                     "mv" => builtins::mv(args),
+                    "ls" => builtins::ls(args),
                     "exit" => process::exit(0),
                     _ => println!("Command '{}' not found", command),
                 }

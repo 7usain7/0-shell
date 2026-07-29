@@ -138,3 +138,41 @@ pub fn mv(args: &[String]) {
         }
     }
 }
+
+pub fn ls(args: &[String]) {
+    let mut paths = args.to_vec();
+    if paths.is_empty() {
+        paths.push(String::from("."));
+    }
+
+    for (i, path_str) in paths.iter().enumerate() {
+        if paths.len() > 1 {
+            if i > 0 {
+                println!();
+            }
+            println!("{}:", path_str);
+        }
+
+        let path = Path::new(path_str);
+        if !path.exists() {
+            eprintln!("ls: cannot access '{}': No such file or directory", path_str);
+            continue;
+        }
+
+        if path.is_dir() {
+            if let Ok(read_dir) = fs::read_dir(path) {
+                let mut entries = Vec::new();
+                for entry in read_dir.flatten() {
+                    let name = entry.file_name().to_string_lossy().to_string();
+                    if !name.starts_with('.') {
+                        entries.push(name);
+                    }
+                }
+                entries.sort();
+                println!("{}", entries.join("  "));
+            }
+        } else {
+            println!("{}", path_str);
+        }
+    }
+}
