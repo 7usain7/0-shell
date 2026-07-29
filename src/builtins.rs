@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 
 pub fn echo(args: &[String]) {
     println!("{}", args.join(" "));
@@ -19,5 +20,34 @@ pub fn cd(args: &[String]) {
 
     if let Err(e) = env::set_current_dir(&path) {
         eprintln!("cd: {}: {}", path, e);
+    }
+}
+
+pub fn cat(args: &[String]) {
+    for arg in args {
+        match fs::read_to_string(arg) {
+            Ok(contents) => print!("{}", contents),
+            Err(e) => eprintln!("cat: {}: {}", arg, e),
+        }
+    }
+}
+
+pub fn mkdir(args: &[String]) {
+    for arg in args {
+        if let Err(e) = fs::create_dir_all(arg) {
+            eprintln!("mkdir: {}: {}", arg, e);
+        }
+    }
+}
+
+pub fn touch(args: &[String]) {
+    if args.is_empty() {
+        eprintln!("touch: missing file operand");
+        return;
+    }
+    for arg in args {
+        if let Err(e) = fs::OpenOptions::new().write(true).create(true).open(arg) {
+            eprintln!("touch: cannot touch '{}': {}", arg, e);
+        }
     }
 }

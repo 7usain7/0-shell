@@ -34,6 +34,9 @@ fn main() {
                     "echo" => builtins::echo(args),
                     "cd" => builtins::cd(args),
                     "pwd" => builtins::pwd(),
+                    "cat" => builtins::cat(args),
+                    "mkdir" => builtins::mkdir(args),
+                    "touch" => builtins::touch(args),
                     "exit" => process::exit(0),
                     _ => println!("Command '{}' not found", command),
                 }
