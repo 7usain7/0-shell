@@ -8,6 +8,12 @@ pub fn echo(args: &[String]) {
     println!("{}", args.join(" "));
 }
 
+pub fn clear() {
+    print!("\x1B[2J\x1B[1;1H");
+    use std::io::Write;
+    let _ = std::io::stdout().flush();
+}
+
 pub fn pwd() {
     if let Ok(dir) = env::current_dir() {
         println!("{}", dir.display());

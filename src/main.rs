@@ -35,6 +35,7 @@ fn main() {
 
                 match command.as_str() {
                     "echo" => builtins::echo(args),
+                    "clear" => builtins::clear(),
                     "cd" => builtins::cd(args),
                     "pwd" => builtins::pwd(),
                     "cat" => builtins::cat(args),
