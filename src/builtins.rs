@@ -1,6 +1,7 @@
+use chrono::{DateTime, Local};
 use std::env;
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::Path;
 
 pub fn echo(args: &[String]) {
@@ -143,6 +144,7 @@ pub fn mv(args: &[String]) {
 pub fn ls(args: &[String]) {
     let mut show_all = false;
     let mut show_indicators = false;
+    let mut long_format = false;
     let mut paths = Vec::new();
 
     for arg in args {
@@ -151,6 +153,7 @@ pub fn ls(args: &[String]) {
                 match c {
                     'a' => show_all = true,
                     'F' => show_indicators = true,
+                    'l' => long_format = true,
                     _ => {}
                 }
             }
@@ -178,27 +181,58 @@ pub fn ls(args: &[String]) {
         }
 
         if path.is_dir() {
-            if let Ok(read_dir) = fs::read_dir(path) {
-                let mut entries = Vec::new();
-                for entry in read_dir.flatten() {
-                    let name = entry.file_name().to_string_lossy().to_string();
-                    if show_all || !name.starts_with('.') {
-                        let mut display_name = name;
-                        if show_indicators {
-                            display_name.push_str(&get_indicator(&entry.path()));
+            let mut entries = match fs::read_dir(path) {
+                Ok(read_dir) => {
+                    let mut vec = Vec::new();
+                    for entry in read_dir.flatten() {
+                        let name = entry.file_name().to_string_lossy().to_string();
+                        if show_all || !name.starts_with('.') {
+                            vec.push(entry);
                         }
-                        entries.push(display_name);
+                    }
+                    vec
+                }
+                Err(e) => {
+                    eprintln!("ls: cannot open directory '{}': {}", path_str, e);
+                    continue;
+                }
+            };
+
+            entries.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+
+            if long_format {
+                let mut total_blocks = 0;
+                for entry in &entries {
+                    if let Ok(meta) = entry.metadata() {
+                        total_blocks += meta.blocks();
                     }
                 }
-                entries.sort();
-                println!("{}", entries.join("  "));
+                println!("total {}", total_blocks / 2);
+                for entry in entries {
+                    print_long_format(&entry.path(), &entry.file_name().to_string_lossy(), show_indicators);
+                }
+            } else {
+                let mut output = Vec::new();
+                for entry in entries {
+                    let mut name = entry.file_name().to_string_lossy().to_string();
+                    if show_indicators {
+                        name.push_str(&get_indicator(&entry.path()));
+                    }
+                    output.push(name);
+                }
+                println!("{}", output.join("  "));
             }
         } else {
-            let mut display_name = path_str.to_string();
-            if show_indicators {
-                display_name.push_str(&get_indicator(path));
+            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            if long_format {
+                print_long_format(path, &name, show_indicators);
+            } else {
+                let mut output = name;
+                if show_indicators {
+                    output.push_str(&get_indicator(path));
+                }
+                println!("{}", output);
             }
-            println!("{}", display_name);
         }
     }
 }
@@ -214,4 +248,51 @@ fn get_indicator(path: &Path) -> String {
         }
     }
     String::new()
+}
+
+fn print_long_format(path: &Path, name: &str, show_indicators: bool) {
+    if let Ok(meta) = fs::symlink_metadata(path) {
+        let mode = meta.permissions().mode();
+        let file_type = if meta.is_symlink() {
+            'l'
+        } else if meta.is_dir() {
+            'd'
+        } else {
+            '-'
+        };
+
+        let mut perms = String::with_capacity(9);
+        let types = [
+            (0o400, 'r'), (0o200, 'w'), (0o100, 'x'),
+            (0o040, 'r'), (0o020, 'w'), (0o010, 'x'),
+            (0o004, 'r'), (0o002, 'w'), (0o001, 'x'),
+        ];
+        for (mask, c) in types.iter() {
+            if mode & mask != 0 { perms.push(*c); } else { perms.push('-'); }
+        }
+
+        let nlink = meta.nlink();
+        let uid = meta.uid();
+        let gid = meta.gid();
+        let size = meta.len();
+
+        let mtime = meta.mtime();
+        let dt = DateTime::from_timestamp(mtime, 0).unwrap_or_default();
+        let local_dt: DateTime<Local> = dt.into();
+        let time_str = local_dt.format("%b %e %H:%M").to_string();
+
+        let mut display_name = name.to_string();
+        if show_indicators {
+            display_name.push_str(&get_indicator(path));
+        }
+
+        print!("{}{} {:>2} {:>4} {:>4} {:>8} {} {}", file_type, perms, nlink, uid, gid, size, time_str, display_name);
+
+        if meta.is_symlink() {
+            if let Ok(target) = fs::read_link(path) {
+                print!(" -> {}", target.display());
+            }
+        }
+        println!();
+    }
 }
