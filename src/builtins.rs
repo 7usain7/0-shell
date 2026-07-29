@@ -114,7 +114,12 @@ pub fn cp(args: &[String]) {
             }
         }
         if let Err(e) = fs::copy(src_path, &final_dest) {
-            eprintln!("cp: cannot copy '{}' to '{}': {}", src_str, final_dest.display(), e);
+            eprintln!(
+                "cp: cannot copy '{}' to '{}': {}",
+                src_str,
+                final_dest.display(),
+                e
+            );
         }
     }
 }
@@ -142,7 +147,12 @@ pub fn mv(args: &[String]) {
             }
         }
         if let Err(e) = fs::rename(src_path, &final_dest) {
-            eprintln!("mv: cannot move '{}' to '{}': {}", src_str, final_dest.display(), e);
+            eprintln!(
+                "mv: cannot move '{}' to '{}': {}",
+                src_str,
+                final_dest.display(),
+                e
+            );
         }
     }
 }
@@ -182,7 +192,10 @@ pub fn ls(args: &[String]) {
 
         let path = Path::new(path_str);
         if !path.exists() {
-            eprintln!("ls: cannot access '{}': No such file or directory", path_str);
+            eprintln!(
+                "ls: cannot access '{}': No such file or directory",
+                path_str
+            );
             continue;
         }
 
@@ -215,7 +228,11 @@ pub fn ls(args: &[String]) {
                 }
                 println!("total {}", total_blocks / 2);
                 for entry in entries {
-                    print_long_format(&entry.path(), &entry.file_name().to_string_lossy(), show_indicators);
+                    print_long_format(
+                        &entry.path(),
+                        &entry.file_name().to_string_lossy(),
+                        show_indicators,
+                    );
                 }
             } else {
                 let mut output = Vec::new();
@@ -229,7 +246,11 @@ pub fn ls(args: &[String]) {
                 println!("{}", output.join("  "));
             }
         } else {
-            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             if long_format {
                 print_long_format(path, &name, show_indicators);
             } else {
@@ -269,12 +290,22 @@ fn print_long_format(path: &Path, name: &str, show_indicators: bool) {
 
         let mut perms = String::with_capacity(9);
         let types = [
-            (0o400, 'r'), (0o200, 'w'), (0o100, 'x'),
-            (0o040, 'r'), (0o020, 'w'), (0o010, 'x'),
-            (0o004, 'r'), (0o002, 'w'), (0o001, 'x'),
+            (0o400, 'r'),
+            (0o200, 'w'),
+            (0o100, 'x'),
+            (0o040, 'r'),
+            (0o020, 'w'),
+            (0o010, 'x'),
+            (0o004, 'r'),
+            (0o002, 'w'),
+            (0o001, 'x'),
         ];
         for (mask, c) in types.iter() {
-            if mode & mask != 0 { perms.push(*c); } else { perms.push('-'); }
+            if mode & mask != 0 {
+                perms.push(*c);
+            } else {
+                perms.push('-');
+            }
         }
 
         let nlink = meta.nlink();
@@ -292,7 +323,10 @@ fn print_long_format(path: &Path, name: &str, show_indicators: bool) {
             display_name.push_str(&get_indicator(path));
         }
 
-        print!("{}{} {:>2} {:>4} {:>4} {:>8} {} {}", file_type, perms, nlink, uid, gid, size, time_str, display_name);
+        print!(
+            "{}{} {:>2} {:>4} {:>4} {:>8} {} {}",
+            file_type, perms, nlink, uid, gid, size, time_str, display_name
+        );
 
         if meta.is_symlink() {
             if let Ok(target) = fs::read_link(path) {
