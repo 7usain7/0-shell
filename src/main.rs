@@ -37,6 +37,7 @@ fn main() {
                     "cat" => builtins::cat(args),
                     "mkdir" => builtins::mkdir(args),
                     "touch" => builtins::touch(args),
+                    "rm" => builtins::rm(args),
                     "exit" => process::exit(0),
                     _ => println!("Command '{}' not found", command),
                 }

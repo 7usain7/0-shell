@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::path::Path;
 
 pub fn echo(args: &[String]) {
     println!("{}", args.join(" "));
@@ -48,6 +49,36 @@ pub fn touch(args: &[String]) {
     for arg in args {
         if let Err(e) = fs::OpenOptions::new().write(true).create(true).open(arg) {
             eprintln!("touch: cannot touch '{}': {}", arg, e);
+        }
+    }
+}
+
+pub fn rm(args: &[String]) {
+    let mut recursive = false;
+    let mut targets = Vec::new();
+
+    for arg in args {
+        if arg == "-r" || arg == "-R" {
+            recursive = true;
+        } else {
+            targets.push(arg);
+        }
+    }
+
+    for target in targets {
+        let path = Path::new(target);
+        if path.is_dir() {
+            if recursive {
+                if let Err(e) = fs::remove_dir_all(path) {
+                    eprintln!("rm: cannot remove '{}': {}", target, e);
+                }
+            } else {
+                eprintln!("rm: cannot remove '{}': Is a directory", target);
+            }
+        } else {
+            if let Err(e) = fs::remove_file(path) {
+                eprintln!("rm: cannot remove '{}': {}", target, e);
+            }
         }
     }
 }
