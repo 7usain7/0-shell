@@ -7,7 +7,10 @@ mod parser;
 fn main() {
     loop {
         print!("$ ");
-        io::stdout().flush().unwrap();
+        if let Err(e) = io::stdout().flush() {
+            eprintln!("Error flushing stdout: {}", e);
+            continue;
+        }
 
         let mut input = String::new();
         match io::stdin().read_line(&mut input) {
