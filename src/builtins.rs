@@ -82,3 +82,59 @@ pub fn rm(args: &[String]) {
         }
     }
 }
+
+pub fn cp(args: &[String]) {
+    if args.len() < 2 {
+        eprintln!("cp: missing file operand");
+        return;
+    }
+    let dest_str = &args[args.len() - 1];
+    let dest_path = Path::new(dest_str);
+    let is_dir = dest_path.is_dir();
+
+    if args.len() > 2 && !is_dir {
+        eprintln!("cp: target '{}' is not a directory", dest_str);
+        return;
+    }
+
+    for src_str in &args[..args.len() - 1] {
+        let src_path = Path::new(src_str);
+        let mut final_dest = dest_path.to_path_buf();
+        if is_dir {
+            if let Some(file_name) = src_path.file_name() {
+                final_dest.push(file_name);
+            }
+        }
+        if let Err(e) = fs::copy(src_path, &final_dest) {
+            eprintln!("cp: cannot copy '{}' to '{}': {}", src_str, final_dest.display(), e);
+        }
+    }
+}
+
+pub fn mv(args: &[String]) {
+    if args.len() < 2 {
+        eprintln!("mv: missing file operand");
+        return;
+    }
+    let dest_str = &args[args.len() - 1];
+    let dest_path = Path::new(dest_str);
+    let is_dir = dest_path.is_dir();
+
+    if args.len() > 2 && !is_dir {
+        eprintln!("mv: target '{}' is not a directory", dest_str);
+        return;
+    }
+
+    for src_str in &args[..args.len() - 1] {
+        let src_path = Path::new(src_str);
+        let mut final_dest = dest_path.to_path_buf();
+        if is_dir {
+            if let Some(file_name) = src_path.file_name() {
+                final_dest.push(file_name);
+            }
+        }
+        if let Err(e) = fs::rename(src_path, &final_dest) {
+            eprintln!("mv: cannot move '{}' to '{}': {}", src_str, final_dest.display(), e);
+        }
+    }
+}

@@ -38,6 +38,8 @@ fn main() {
                     "mkdir" => builtins::mkdir(args),
                     "touch" => builtins::touch(args),
                     "rm" => builtins::rm(args),
+                    "cp" => builtins::cp(args),
+                    "mv" => builtins::mv(args),
                     "exit" => process::exit(0),
                     _ => println!("Command '{}' not found", command),
                 }
