@@ -32,6 +32,8 @@ fn main() {
 
                 match command.as_str() {
                     "echo" => builtins::echo(args),
+                    "cd" => builtins::cd(args),
+                    "pwd" => builtins::pwd(),
                     "exit" => process::exit(0),
                     _ => println!("Command '{}' not found", command),
                 }
