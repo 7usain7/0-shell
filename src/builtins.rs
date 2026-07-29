@@ -1,5 +1,6 @@
 use std::env;
 use std::fs;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
 pub fn echo(args: &[String]) {
@@ -140,7 +141,24 @@ pub fn mv(args: &[String]) {
 }
 
 pub fn ls(args: &[String]) {
-    let mut paths = args.to_vec();
+    let mut show_all = false;
+    let mut show_indicators = false;
+    let mut paths = Vec::new();
+
+    for arg in args {
+        if arg.starts_with('-') && arg.len() > 1 {
+            for c in arg.chars().skip(1) {
+                match c {
+                    'a' => show_all = true,
+                    'F' => show_indicators = true,
+                    _ => {}
+                }
+            }
+        } else {
+            paths.push(arg.clone());
+        }
+    }
+
     if paths.is_empty() {
         paths.push(String::from("."));
     }
@@ -164,15 +182,36 @@ pub fn ls(args: &[String]) {
                 let mut entries = Vec::new();
                 for entry in read_dir.flatten() {
                     let name = entry.file_name().to_string_lossy().to_string();
-                    if !name.starts_with('.') {
-                        entries.push(name);
+                    if show_all || !name.starts_with('.') {
+                        let mut display_name = name;
+                        if show_indicators {
+                            display_name.push_str(&get_indicator(&entry.path()));
+                        }
+                        entries.push(display_name);
                     }
                 }
                 entries.sort();
                 println!("{}", entries.join("  "));
             }
         } else {
-            println!("{}", path_str);
+            let mut display_name = path_str.to_string();
+            if show_indicators {
+                display_name.push_str(&get_indicator(path));
+            }
+            println!("{}", display_name);
         }
     }
+}
+
+fn get_indicator(path: &Path) -> String {
+    if let Ok(meta) = fs::symlink_metadata(path) {
+        if meta.is_symlink() {
+            return String::from("@");
+        } else if meta.is_dir() {
+            return String::from("/");
+        } else if meta.permissions().mode() & 0o111 != 0 {
+            return String::from("*");
+        }
+    }
+    String::new()
 }
